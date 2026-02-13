@@ -1,3 +1,4 @@
+/* Styles existants */
 :root {
   --primary-color: #ff6b6b;
   --secondary-color: #4ecdc4;
@@ -11,20 +12,141 @@ body {
   background: linear-gradient(135deg, var(--primary-color), #feca57);
   color: var(--text-color);
   height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   overflow: hidden;
 }
 
 .app {
   text-align: center;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
 }
 
-h1 {
+/* Carrousel */
+.carousel-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+}
+
+.carousel-container h1 {
   font-family: 'Pacifico', cursive;
-  font-size: 2.5rem;
-  margin-bottom: 20px;
+  font-size: 3rem;
+  margin-bottom: 2rem;
+}
+
+.carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.carousel-image {
+  max-width: 80%;
+  max-height: 70vh;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.carousel-button {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.carousel-button:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(1.1);
+}
+
+.prev {
+  left: -80px;
+}
+
+.next {
+  right: -80px;
+}
+
+.carousel-dots {
+  display: flex;
+  gap: 10px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.dot.active {
+  background: white;
+  transform: scale(1.3);
+}
+
+/* Boutons */
+.buttons {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+  position: relative;
+  justify-content: center;
+}
+
+.no-button, .yes-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: var(--shadow);
+}
+
+.no-button {
+  background: var(--primary-color);
+  color: var(--text-color);
+  position: absolute;
+}
+
+.yes-button {
+  background: var(--secondary-color);
+  color: var(--text-color);
+}
+
+.no-button:hover, .yes-button:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.yes-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Autres styles existants */
+.gatekeeper-container {
+  opacity: 1;
+  transition: opacity 1s ease-out;
 }
 
 input {
@@ -54,41 +176,6 @@ input {
   transition: all 0.5s ease;
 }
 
-.buttons {
-  display: flex;
-  gap: 20px;
-  margin-top: 20px;
-}
-
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: var(--shadow);
-}
-
-button:first-child {
-  background: var(--primary-color);
-  color: var(--text-color);
-}
-
-button:last-child {
-  background: var(--secondary-color);
-  color: var(--text-color);
-}
-
-button:hover:not(:disabled) {
-  transform: scale(1.05);
-}
-
-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
 .sparkles {
   font-size: 24px;
   margin-top: 20px;
@@ -111,4 +198,18 @@ button:disabled {
   0% { transform: scale(1); }
   50% { transform: scale(1.2); }
   100% { transform: scale(1); }
+}
+
+.flower--no {
+  transform: rotate(20deg);
+  filter: grayscale(100%);
+}
+
+.flower--yes {
+  transform: scale(1.1);
+  filter: hue-rotate(30deg) drop-shadow(0 0 10px #ff00ff);
+}
+
+.flower--pulse {
+  animation: pulse 1s infinite;
 }

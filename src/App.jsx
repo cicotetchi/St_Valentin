@@ -5,24 +5,24 @@ function App() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [password, setPassword] = useState('');
   const [sparkles, setSparkles] = useState([]);
+  const [noButtonPosition, setNoButtonPosition] = useState({ x: 0, y: 0 });
   const flowerRef = useRef(null);
+  const noButtonRef = useRef(null);
 
-  // Réponses acceptées (ton prénom ou surnom)
   const correctAnswers = ['jf', 'jean francois', 'tetchi', 'tetchi jean francois'];
 
-  // Vérification du mot de passe
   useEffect(() => {
     if (correctAnswers.some(answer => password.toLowerCase().includes(answer))) {
       setTimeout(() => setIsUnlocked(true), 1000);
     }
   }, [password]);
 
-  // Animation de la fleur
   const handleNoMouseOver = () => {
     if (flowerRef.current) {
       flowerRef.current.style.transform = 'rotate(20deg)';
       flowerRef.current.style.filter = 'grayscale(100%)';
     }
+    moveNoButtonAway();
   };
 
   const handleNoMouseOut = () => {
@@ -47,6 +47,29 @@ function App() {
     }
   };
 
+  const moveNoButtonAway = () => {
+    if (noButtonRef.current) {
+      const buttonRect = noButtonRef.current.getBoundingClientRect();
+      const buttonWidth = buttonRect.width;
+      const buttonHeight = buttonRect.height;
+
+      const maxX = window.innerWidth - buttonWidth - 20;
+      const maxY = window.innerHeight - buttonHeight - 20;
+
+      let newX, newY;
+
+      do {
+        newX = Math.floor(Math.random() * maxX);
+        newY = Math.floor(Math.random() * maxY);
+      } while (
+        Math.abs(newX - buttonRect.left) < 100 &&
+        Math.abs(newY - buttonRect.top) < 100
+      );
+
+      setNoButtonPosition({ x: newX, y: newY });
+    }
+  };
+
   return (
     <div className="app">
       {!isUnlocked ? (
@@ -61,7 +84,7 @@ function App() {
         </div>
       ) : (
         <div className="question-container">
-          <h1>Veux-tu être ma Valentine ?</h1>
+          <h1>Veux-tu être ma Valentine ?<br />Rendez-vous demain soir là où tout a commencé ?</h1>
           <div
             className="flower"
             ref={flowerRef}
@@ -69,9 +92,11 @@ function App() {
           />
           <div className="buttons">
             <button
+              ref={noButtonRef}
               onMouseOver={handleNoMouseOver}
               onMouseOut={handleNoMouseOut}
-              disabled={sparkles.length > 0}
+              className="no-button"
+              style={{ position: 'absolute', left: `${noButtonPosition.x}px`, top: `${noButtonPosition.y}px` }}
             >
               Non
             </button>
@@ -79,8 +104,9 @@ function App() {
               onMouseOver={handleYesMouseOver}
               onClick={handleYesClick}
               disabled={sparkles.length > 0}
+              className="yes-button"
             >
-              {sparkles.length > 0 ? "Merci ! 💖" : "Oui !"}
+              {sparkles.length > 0 ? "À demain ! 💖" : "Oui !"}
             </button>
           </div>
           {sparkles.length > 0 && (
