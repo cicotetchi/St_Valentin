@@ -6,8 +6,16 @@ function App() {
   const [password, setPassword] = useState('');
   const [sparkles, setSparkles] = useState([]);
   const [noButtonPosition, setNoButtonPosition] = useState({ x: 0, y: 0 });
+  const [showPhotos, setShowPhotos] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState(null);
   const flowerRef = useRef(null);
   const noButtonRef = useRef(null);
+
+  // Liste des photos
+  const images = [];
+  for (let i = 1; i <= 10; i++) {
+    images.push(`/images/photo${i}.jpg`);
+  }
 
   const correctAnswers = ['jf', 'jean francois', 'tetchi', 'tetchi jean francois'];
 
@@ -44,6 +52,7 @@ function App() {
       flowerRef.current.style.animation = 'pulse 1s infinite';
       document.body.style.background = 'linear-gradient(135deg, #ff9a9e, #fad0c4)';
       setSparkles(['✨', '💖', '💘', '💕', '🌟']);
+      setTimeout(() => setShowPhotos(true), 1500);
     }
   };
 
@@ -53,21 +62,32 @@ function App() {
       const buttonWidth = buttonRect.width;
       const buttonHeight = buttonRect.height;
 
-      const maxX = window.innerWidth - buttonWidth - 20;
-      const maxY = window.innerHeight - buttonHeight - 20;
+      const directions = [
+        { x: 1, y: 0 },   // droite
+        { x: -1, y: 0 },  // gauche
+        { x: 0, y: 1 },   // bas
+        { x: 0, y: -1 },  // haut
+        { x: 1, y: 1 },   // bas-droite
+        { x: 1, y: -1 },  // haut-droite
+        { x: -1, y: 1 },  // bas-gauche
+        { x: -1, y: -1 }  // haut-gauche
+      ];
 
-      let newX, newY;
+      const randomDirection = directions[Math.floor(Math.random() * directions.length)];
 
-      do {
-        newX = Math.floor(Math.random() * maxX);
-        newY = Math.floor(Math.random() * maxY);
-      } while (
-        Math.abs(newX - buttonRect.left) < 100 &&
-        Math.abs(newY - buttonRect.top) < 100
-      );
+      const newX = buttonRect.left + randomDirection.x * 15;
+      const newY = buttonRect.top + randomDirection.y * 15;
 
       setNoButtonPosition({ x: newX, y: newY });
     }
+  };
+
+  const handleImageClick = (image) => {
+    setZoomedImage(image);
+  };
+
+  const closeZoomedImage = () => {
+    setZoomedImage(null);
   };
 
   return (
@@ -78,11 +98,11 @@ function App() {
             type="text"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Qui est-ce ?"
+            placeholder="Dit mon nom ? indice je suis le daddy de geo...."
             autoFocus
           />
         </div>
-      ) : (
+      ) : !showPhotos ? (
         <div className="question-container">
           <h1>Veux-tu être ma Valentine ?<br />Rendez-vous demain soir là où tout a commencé ?</h1>
           <div
@@ -94,7 +114,6 @@ function App() {
             <button
               ref={noButtonRef}
               onMouseOver={handleNoMouseOver}
-              onMouseOut={handleNoMouseOut}
               className="no-button"
               style={{ position: 'absolute', left: `${noButtonPosition.x}px`, top: `${noButtonPosition.y}px` }}
             >
@@ -122,6 +141,29 @@ function App() {
               ))}
             </div>
           )}
+        </div>
+      ) : (
+        <div className="photos-container">
+          {zoomedImage ? (
+            <div className="zoomed-image-container" onClick={closeZoomedImage}>
+              <img src={zoomedImage} alt="Zoomed" className="zoomed-image" />
+            </div>
+          ) : null}
+          <h1>Nos plus beaux souvenirs ❤️</h1>
+          <div className="photos-grid">
+            {images.map((image, index) => (
+              <div key={index} className="photo-wrapper" onClick={() => handleImageClick(image)}>
+                <img src={image} alt={`Photo ${index + 1}`} className="photo" onError={() => console.log(`Failed to load image: ${image}`)} />
+              </div>
+            ))}
+          </div>
+          <div className="question-overlay">
+            <h2>Alors, on se voit demain ?</h2>
+            <div className="overlay-buttons">
+              <button className="overlay-no-button" onMouseOver={moveNoButtonAway} style={{ position: 'relative', left: `${noButtonPosition.x}px`, top: `${noButtonPosition.y}px` }}>Non</button>
+              <button className="overlay-yes-button">Oui !</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
