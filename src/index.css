@@ -1,0 +1,21 @@
+/* src/index.css */
+:root {
+  --font-primary: 'Roboto', sans-serif;
+  --font-secondary: 'Pacifico', cursive;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-primary);
+  background: linear-gradient(135deg, #ff6b6b, #feca57);
+  color: white;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
