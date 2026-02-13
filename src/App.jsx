@@ -1,169 +1,257 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import './App.css';
 
+const TOTAL_PHOTOS = 34;
+const HEART_COUNT = 20;
+const CONFETTI_COUNT = 50;
+const EVASION_DISTANCE = 100;
+const TRANSITION_DURATION = 3000;
+
+const images = Array.from({ length: TOTAL_PHOTOS }, (_, i) => `/images/photo${i + 1}.jpg`);
+
 function App() {
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [password, setPassword] = useState('');
-  const [sparkles, setSparkles] = useState([]);
-  const [noButtonPosition, setNoButtonPosition] = useState({ x: 0, y: 0 });
-  const [showPhotos, setShowPhotos] = useState(false);
+  const [phase, setPhase] = useState('question');
   const [zoomedImage, setZoomedImage] = useState(null);
-  const flowerRef = useRef(null);
+  const [noButtonPos, setNoButtonPos] = useState(null);
+  const [confettiHearts, setConfettiHearts] = useState([]);
+  const [visiblePhotos, setVisiblePhotos] = useState(new Set());
+
   const noButtonRef = useRef(null);
+  const photoRefs = useRef({});
 
-  // Liste des photos
-  const images = [];
-  for (let i = 1; i <= 10; i++) {
-    images.push(`/images/photo${i}.jpg`);
-  }
+  // Floating hearts data (generated once)
+  const floatingHearts = useRef(
+    Array.from({ length: HEART_COUNT }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      size: 10 + Math.random() * 20,
+      duration: 6 + Math.random() * 10,
+      delay: Math.random() * 8,
+      opacity: 0.1 + Math.random() * 0.3,
+    }))
+  );
 
-  const correctAnswers = ['jf', 'jean francois', 'tetchi', 'tetchi jean francois'];
+  // Move "Non" button to a random viewport position
+  const moveNoButton = useCallback(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const margin = 20;
+    const btnW = 100;
+    const btnH = 44;
+    const newX = margin + Math.random() * (vw - btnW - margin * 2);
+    const newY = margin + Math.random() * (vh - btnH - margin * 2);
+    setNoButtonPos({ x: newX, y: newY });
+  }, []);
 
-  useEffect(() => {
-    if (correctAnswers.some(answer => password.toLowerCase().includes(answer))) {
-      setTimeout(() => setIsUnlocked(true), 1000);
-    }
-  }, [password]);
+  // Unified pointer proximity check
+  const handlePointerNear = useCallback(
+    (clientX, clientY) => {
+      if (phase !== 'question' || !noButtonRef.current) return;
+      const rect = noButtonRef.current.getBoundingClientRect();
+      const btnCenterX = rect.left + rect.width / 2;
+      const btnCenterY = rect.top + rect.height / 2;
+      const dist = Math.hypot(clientX - btnCenterX, clientY - btnCenterY);
+      if (dist < EVASION_DISTANCE) {
+        moveNoButton();
+      }
+    },
+    [phase, moveNoButton]
+  );
 
-  const handleNoMouseOver = () => {
-    if (flowerRef.current) {
-      flowerRef.current.style.transform = 'rotate(20deg)';
-      flowerRef.current.style.filter = 'grayscale(100%)';
-    }
-    moveNoButtonAway();
+  const handleMouseMove = (e) => handlePointerNear(e.clientX, e.clientY);
+
+  const handleTouchMove = (e) => {
+    const touch = e.touches[0];
+    if (touch) handlePointerNear(touch.clientX, touch.clientY);
   };
 
-  const handleNoMouseOut = () => {
-    if (flowerRef.current) {
-      flowerRef.current.style.transform = 'rotate(0deg)';
-      flowerRef.current.style.filter = 'grayscale(0%)';
-    }
-  };
-
-  const handleYesMouseOver = () => {
-    if (flowerRef.current) {
-      flowerRef.current.style.transform = 'scale(1.1)';
-      flowerRef.current.style.filter = 'hue-rotate(30deg) drop-shadow(0 0 10px #ff00ff)';
-    }
-  };
-
+  // Click "Oui" → transition → gallery
   const handleYesClick = () => {
-    if (flowerRef.current) {
-      flowerRef.current.style.animation = 'pulse 1s infinite';
-      document.body.style.background = 'linear-gradient(135deg, #ff9a9e, #fad0c4)';
-      setSparkles(['✨', '💖', '💘', '💕', '🌟']);
-      setTimeout(() => setShowPhotos(true), 1500);
+    const hearts = Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 10 + Math.random() * 25,
+      delay: Math.random() * 0.5,
+      duration: 1 + Math.random() * 2,
+    }));
+    setConfettiHearts(hearts);
+    setPhase('transition');
+
+    setTimeout(() => {
+      setPhase('gallery');
+      setConfettiHearts([]);
+    }, TRANSITION_DURATION);
+  };
+
+  const handleImageClick = (image) => setZoomedImage(image);
+  const closeZoom = () => setZoomedImage(null);
+
+  // Initial "Non" button position
+  useEffect(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    setNoButtonPos({ x: vw / 2 - 140, y: vh / 2 + 120 });
+  }, []);
+
+  // Body overflow management
+  useEffect(() => {
+    if (phase === 'gallery') {
+      document.body.style.overflow = 'auto';
+      document.body.style.overflowX = 'hidden';
+    } else {
+      document.body.style.overflow = 'hidden';
     }
-  };
+  }, [phase]);
 
-  const moveNoButtonAway = () => {
-    if (noButtonRef.current) {
-      const buttonRect = noButtonRef.current.getBoundingClientRect();
-      const buttonWidth = buttonRect.width;
-      const buttonHeight = buttonRect.height;
+  // Close zoom on Escape
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape' && zoomedImage) closeZoom();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [zoomedImage]);
 
-      const directions = [
-        { x: 1, y: 0 },   // droite
-        { x: -1, y: 0 },  // gauche
-        { x: 0, y: 1 },   // bas
-        { x: 0, y: -1 },  // haut
-        { x: 1, y: 1 },   // bas-droite
-        { x: 1, y: -1 },  // haut-droite
-        { x: -1, y: 1 },  // bas-gauche
-        { x: -1, y: -1 }  // haut-gauche
-      ];
+  // Staggered photo reveal with IntersectionObserver
+  useEffect(() => {
+    if (phase !== 'gallery') return;
 
-      const randomDirection = directions[Math.floor(Math.random() * directions.length)];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = entry.target.dataset.index;
+            setVisiblePhotos((prev) => new Set([...prev, index]));
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
 
-      const newX = buttonRect.left + randomDirection.x * 15;
-      const newY = buttonRect.top + randomDirection.y * 15;
+    Object.values(photoRefs.current).forEach((el) => {
+      if (el) observer.observe(el);
+    });
 
-      setNoButtonPosition({ x: newX, y: newY });
-    }
-  };
-
-  const handleImageClick = (image) => {
-    setZoomedImage(image);
-  };
-
-  const closeZoomedImage = () => {
-    setZoomedImage(null);
-  };
+    return () => observer.disconnect();
+  }, [phase]);
 
   return (
-    <div className="app">
-      {!isUnlocked ? (
-        <div className="gatekeeper-container">
-          <input
-            type="text"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Dit mon nom ? indice je suis le daddy de geo...."
-            autoFocus
-          />
-        </div>
-      ) : !showPhotos ? (
-        <div className="question-container">
-          <h1>Veux-tu être ma Valentine ?<br />Rendez-vous demain soir là où tout a commencé ?</h1>
+    <div className="app" onMouseMove={handleMouseMove} onTouchMove={handleTouchMove}>
+      {/* Floating background hearts */}
+      <div className="floating-hearts" aria-hidden="true">
+        {floatingHearts.current.map((h) => (
           <div
-            className="flower"
-            ref={flowerRef}
-            style={{ backgroundImage: "url('https://em-content.zobj.net/thumbs/120/apple/325/rose_1f339.png')" }}
-          />
-          <div className="buttons">
+            key={h.id}
+            className="floating-heart"
+            style={{
+              left: `${h.left}%`,
+              fontSize: `${h.size}px`,
+              animationDuration: `${h.duration}s`,
+              animationDelay: `${h.delay}s`,
+              opacity: h.opacity,
+            }}
+          >
+            &#x2764;
+          </div>
+        ))}
+      </div>
+
+      {/* SCREEN 1: Question */}
+      {phase === 'question' && (
+        <div className="question-screen">
+          <div className="question-content">
+            <h1 className="question-title">Veux-tu être ma Valentine ?</h1>
+            <p className="question-subtitle">
+              Rendez-vous demain soir là où tout a commencé...
+            </p>
+            <div className="rose-emoji" aria-label="Rose">🌹</div>
+            <button className="yes-button" onClick={handleYesClick}>
+              Oui !
+            </button>
+          </div>
+          {noButtonPos && (
             <button
               ref={noButtonRef}
-              onMouseOver={handleNoMouseOver}
               className="no-button"
-              style={{ position: 'absolute', left: `${noButtonPosition.x}px`, top: `${noButtonPosition.y}px` }}
+              style={{ left: `${noButtonPos.x}px`, top: `${noButtonPos.y}px` }}
+              onTouchStart={moveNoButton}
             >
               Non
             </button>
-            <button
-              onMouseOver={handleYesMouseOver}
-              onClick={handleYesClick}
-              disabled={sparkles.length > 0}
-              className="yes-button"
-            >
-              {sparkles.length > 0 ? "À demain ! 💖" : "Oui !"}
-            </button>
-          </div>
-          {sparkles.length > 0 && (
-            <div className="sparkles">
-              {sparkles.map((sparkle, index) => (
-                <span
-                  key={index}
-                  className="sparkle"
-                  style={{ left: `${Math.random() * 80}%`, animationDelay: `${index * 0.2}s` }}
-                >
-                  {sparkle}
-                </span>
-              ))}
-            </div>
           )}
         </div>
-      ) : (
-        <div className="photos-container">
-          {zoomedImage ? (
-            <div className="zoomed-image-container" onClick={closeZoomedImage}>
-              <img src={zoomedImage} alt="Zoomed" className="zoomed-image" />
+      )}
+
+      {/* TRANSITION: Hearts explosion + love message */}
+      {phase === 'transition' && (
+        <div className="transition-screen">
+          {confettiHearts.map((h) => (
+            <div
+              key={h.id}
+              className="confetti-heart"
+              style={{
+                left: `${h.x}%`,
+                top: `${h.y}%`,
+                fontSize: `${h.size}px`,
+                animationDelay: `${h.delay}s`,
+                animationDuration: `${h.duration}s`,
+              }}
+            >
+              &#x2764;
             </div>
-          ) : null}
-          <h1>Nos plus beaux souvenirs ❤️</h1>
+          ))}
+          <div className="transition-message">
+            <span className="love-text">Je t&apos;aime...</span>
+          </div>
+        </div>
+      )}
+
+      {/* SCREEN 2: Gallery */}
+      {phase === 'gallery' && (
+        <div className="gallery-screen">
+          <div className="gallery-header">
+            <h1 className="gallery-title">Nos plus beaux souvenirs</h1>
+            <p className="love-letter">
+              Chaque photo est un moment gravé dans mon cœur.
+              <br />
+              Merci d&apos;être toi, merci d&apos;être nous.
+            </p>
+          </div>
           <div className="photos-grid">
             {images.map((image, index) => (
-              <div key={index} className="photo-wrapper" onClick={() => handleImageClick(image)}>
-                <img src={image} alt={`Photo ${index + 1}`} className="photo" onError={() => console.log(`Failed to load image: ${image}`)} />
+              <div
+                key={index}
+                ref={(el) => (photoRefs.current[index] = el)}
+                data-index={index}
+                className={`photo-card ${visiblePhotos.has(String(index)) ? 'photo-visible' : ''}`}
+                style={{ animationDelay: `${(index % 6) * 0.1}s` }}
+                onClick={() => handleImageClick(image)}
+              >
+                <img
+                  src={image}
+                  alt={`Souvenir ${index + 1}`}
+                  className="photo-img"
+                  loading="lazy"
+                />
               </div>
             ))}
           </div>
-          <div className="question-overlay">
-            <h2>Alors, on se voit demain ?</h2>
-            <div className="overlay-buttons">
-              <button className="overlay-no-button" onMouseOver={moveNoButtonAway} style={{ position: 'relative', left: `${noButtonPosition.x}px`, top: `${noButtonPosition.y}px` }}>Non</button>
-              <button className="overlay-yes-button">Oui !</button>
-            </div>
+          <div className="gallery-footer">
+            <p>À notre histoire, à nous deux ❤️</p>
           </div>
+        </div>
+      )}
+
+      {/* Zoom overlay */}
+      {zoomedImage && (
+        <div className="zoom-overlay" onClick={closeZoom}>
+          <img
+            src={zoomedImage}
+            alt="Photo agrandie"
+            className="zoom-image"
+          />
         </div>
       )}
     </div>
